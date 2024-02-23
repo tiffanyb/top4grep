@@ -37,7 +37,7 @@ def paper_exist(conf, year, title, authors, abstract):
     session.close()
     return paper is not None
 
-def get_papers(name, year):
+def get_papers(name, year, build_abstract):
     cnt = 0
     conf = NAME_MAP[name]
 
@@ -50,7 +50,10 @@ def get_papers(name, year):
         for paper_html in paper_htmls:
             title = paper_html.find('span', {'class': 'title'}).text
             authors = [x.text for x in paper_html.find_all('span', {'itemprop': 'author'})]
-            abstract = Abstracts[name].get_abstract(paper_html, title, authors)
+            if build_abstract:
+                abstract = Abstracts[name].get_abstract(paper_html, title, authors)
+            else:
+                abstract = ''
             # insert the entry only if the paper does not exist
             if not paper_exist(name, year, title, authors, abstract):
                 save_paper(name, year, title, authors, abstract)
@@ -61,7 +64,7 @@ def get_papers(name, year):
     logger.debug(f"Found {cnt} papers at {name}-{year}...")
 
 
-def build_db():
+def build_db(build_abstract):
     for conf in CONFERENCES:
-        for year in range(2023, datetime.now().year+1):
-            get_papers(conf, year)
+        for year in range(2015, datetime.now().year+1):
+            get_papers(conf, year, build_abstract)

@@ -43,6 +43,7 @@ def fuzzy_match(title):
 
 def grep(keywords):
     # TODO: currently we only grep from title, also grep from other fields in the future maybe?
+    # TODO: add grep from abstract
     constraints = [Paper.title.contains(x) for x in keywords]
     with Session() as session:
         papers = session.query(Paper).filter(*constraints).all()
@@ -69,9 +70,12 @@ def main():
                                      usage="%(prog)s [options] -k <keywords>")
     parser.add_argument('-k', type=str, help="keywords to grep, separated by ','. For example, 'linux,kernel,exploit'", default='')
     parser.add_argument('--build-db', action="store_true", help="Builds the database of conference papers")
+    parser.add_argument('--abstract', action="store_true", help="Involve abstract into the database's building or query")
     args = parser.parse_args()
 
     if args.k:
+        if args.abstract:
+            logger.info("Abstract query is not implemented and we are only grepping title now.")
         assert os.path.exists(DB_PATH), f"need to build a paper database first to perform wanted queries"
         keywords = [x.strip() for x in args.k.split(',')]
         if keywords:
@@ -85,7 +89,7 @@ def main():
         show_papers(papers)
     elif args.build_db:
         print("Building db...")
-        build_db()
+        build_db(args.abstract)
 
 
 if __name__ == "__main__":
