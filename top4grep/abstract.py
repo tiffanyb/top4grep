@@ -1,3 +1,6 @@
+"""
+Test: python3 -m top4grep.abstract
+"""
 import re
 import requests
 from abc import ABC, abstractmethod
@@ -65,11 +68,11 @@ class AbstractSP(BasePaperAbstract):
         else:
             return url
 
-    def get_abstract_from_publisher(self, url, authors):
+    def _get_abstract_from_computerorg(self, url):
         driver = webdriver.Chrome()
         url = self.update_url(url)
-        logger.debug(f'URL: {url}')
         driver.get(url)
+
 
         # Wait for the dynamic element to be present on the page
         element = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.TAG_NAME, 'article')))
@@ -77,10 +80,49 @@ class AbstractSP(BasePaperAbstract):
         abstract = element.find_element(By.CLASS_NAME, 'article-content').text
         driver.quit()
         return abstract
+    
+    def get_abstract_from_publisher(self, url, _):
+        parsed_url = urlparse(url)
+        ieee_netloc = 'doi.ieeecomputersociety.org'
+        doi_netlog = 'doi.org'
+        if parsed_url.netloc == ieee_netloc:  
+            return self._get_abstract_from_computerorg(url)
+        elif parsed_url.netloc == doi_netlog:
+            return self._get_abstract_from_ieeexplore(url)
+        else:
+            raise NotImplementedError
+
+
+    def _get_abstract_from_ieeexplore(self, url):
+        driver = webdriver.Chrome()
+        url = self.update_url(url)
+        logger.debug(f'URL: {url}')
+        driver.get(url)
+
+        # Wait for the dynamic element to be present on the page
+        element = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CLASS_NAME, 'abstract-text')))
+        temp = element.find_elements(By.CLASS_NAME, 'abstract-text-view-all')
+        if len(temp) > 0:
+            # If there's a view all button
+            view_all = temp[0]
+            driver.execute_script("arguments[0].scrollIntoView(true);", view_all)
+            view_all.click()
+            text = driver.find_element(By.CLASS_NAME, 'abstract-text').text
+        else:
+            text = element.text
+        
+        if text.find('Abstract:\n') >= 0:
+            text = text[text.find('Abstract:\n') + len('Abstract:\n'):]
+        if text.find('\n(Show Less)') >= 0:
+            text = text[:text.find('\n(Show Less)')]
+        
+        driver.close()
+        return text
 
 class AbstractUSENIX(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
         r = requests.get(url)
+        logger.debug(f'URL: {url}')
         assert r.status_code == 200
 
         html = BeautifulSoup(r.text, 'html.parser')
@@ -90,6 +132,7 @@ class AbstractUSENIX(BasePaperAbstract):
 
 class AbstractCCS(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
+        logger.debug(f'URL: {url}')
         r = requests.get(url)
         assert r.status_code == 200
 
@@ -113,7 +156,7 @@ if __name__ == '__main__':
     logger.setLevel('DEBUG')
     # SP.get_abstract_from_publisher('https://doi.ieeecomputersociety.org/10.1109/SP46215.2023.00131', [])
     # SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179411', [])
-    SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179305', [])
+    print(SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179381', []))
     # print(USENIX.get_abstract_from_publisher('https://www.usenix.org/conference/usenixsecurity20/presentation/cremers', []))
     # print(CCS.get_abstract_from_publisher('https://doi.org/10.1145/3576915.3616615', []))
 
