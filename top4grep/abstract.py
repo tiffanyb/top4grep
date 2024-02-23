@@ -43,14 +43,19 @@ class BasePaperAbstract(ABC):
 
 class AbstractNDSS(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
+        logger.debug(f'URL: {url}')
         r = requests.get(url)
         assert r.status_code == 200
 
         html = BeautifulSoup(r.text, 'html.parser')
         paper_data = html.find('div', {'class': 'paper-data'})
-        abstract_paragraphs = filter(lambda x: x.text != '' and not authors[0] in x.text, paper_data.find_all('p'))
-        ap_list = [x.text for x in abstract_paragraphs]
-        return '\n'.join(ap_list)
+        if paper_data is not None:
+            abstract_paragraphs = filter(lambda x: x.text != '' and not authors[0] in x.text, paper_data.find_all('p'))
+            ap_list = [x.text for x in abstract_paragraphs]
+            return '\n'.join(ap_list)
+        else:
+            abstract_paragraphs = html.find(string=re.compile("Abstract:")).find_next(recursive=False)
+            return abstract_paragraphs.get_text(separator='\n')
 
 
 class AbstractSP(BasePaperAbstract):
@@ -156,7 +161,7 @@ if __name__ == '__main__':
     logger.setLevel('DEBUG')
     # SP.get_abstract_from_publisher('https://doi.ieeecomputersociety.org/10.1109/SP46215.2023.00131', [])
     # SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179411', [])
-    print(SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179381', []))
+    # print(SP.get_abstract_from_publisher('https://doi.org/10.1109/SP46215.2023.10179381', []))
     # print(USENIX.get_abstract_from_publisher('https://www.usenix.org/conference/usenixsecurity20/presentation/cremers', []))
     # print(CCS.get_abstract_from_publisher('https://doi.org/10.1145/3576915.3616615', []))
-
+    print(NDSS.get_abstract_from_publisher('https://www.ndss-symposium.org/ndss2015/i-do-not-know-what-you-visited-last-summer-protecting-users-third-party-web-tracking', []))
