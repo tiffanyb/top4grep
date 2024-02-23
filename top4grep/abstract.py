@@ -43,6 +43,7 @@ class BasePaperAbstract(ABC):
 
 class AbstractNDSS(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
+        # TODO: special case: NDSS 2018 has only pdf link in dblp
         logger.debug(f'URL: {url}')
         r = requests.get(url)
         assert r.status_code == 200
