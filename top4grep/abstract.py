@@ -15,7 +15,7 @@ from urllib.parse import urlparse, urlunparse
 from .utils import new_logger
 
 logger = new_logger('PaperAbstract')
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
 
 class BasePaperAbstract(ABC):
     def get_abstract(self, paper_html, title, authors):
@@ -74,6 +74,7 @@ class AbstractSP(BasePaperAbstract):
             return url
 
     def _get_abstract_from_computerorg(self, url):
+        # TODO: handle the case when Chrome is not available
         driver = webdriver.Chrome()
         url = self.update_url(url)
         driver.get(url)
@@ -87,6 +88,7 @@ class AbstractSP(BasePaperAbstract):
         return abstract
     
     def _get_abstract_from_ieeexplore(self, url):
+        # TODO: handle the case when Chrome is not available
         driver = webdriver.Chrome()
         url = self.update_url(url)
         logger.debug(f'URL: {url}')
