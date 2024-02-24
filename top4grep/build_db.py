@@ -41,6 +41,11 @@ def get_papers(name, year, build_abstract):
     cnt = 0
     conf = NAME_MAP[name]
 
+    if build_abstract and name == "NDSS" and year == 2018:
+        logger.warning(f"Skipping the abstract for NDSS 2018 becuase the website does not contain abstracts.")
+        extract_abstract = False
+    else:
+        extract_abstract = build_abstract
     try:
         r = requests.get(f"https://dblp.org/db/conf/{conf}/{conf}{year}.html")
         assert r.status_code == 200
@@ -50,7 +55,7 @@ def get_papers(name, year, build_abstract):
         for paper_html in paper_htmls:
             title = paper_html.find('span', {'class': 'title'}).text
             authors = [x.text for x in paper_html.find_all('span', {'itemprop': 'author'})]
-            if build_abstract:
+            if extract_abstract:
                 abstract = Abstracts[name].get_abstract(paper_html, title, authors)
             else:
                 abstract = ''

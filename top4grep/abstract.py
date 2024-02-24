@@ -43,7 +43,6 @@ class BasePaperAbstract(ABC):
 
 class AbstractNDSS(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
-        # TODO: special case: NDSS 2018 has only pdf link in dblp
         logger.debug(f'URL: {url}')
         r = requests.get(url)
         assert r.status_code == 200
@@ -87,18 +86,6 @@ class AbstractSP(BasePaperAbstract):
         driver.quit()
         return abstract
     
-    def get_abstract_from_publisher(self, url, _):
-        parsed_url = urlparse(url)
-        ieee_netloc = 'doi.ieeecomputersociety.org'
-        doi_netlog = 'doi.org'
-        if parsed_url.netloc == ieee_netloc:  
-            return self._get_abstract_from_computerorg(url)
-        elif parsed_url.netloc == doi_netlog:
-            return self._get_abstract_from_ieeexplore(url)
-        else:
-            raise NotImplementedError
-
-
     def _get_abstract_from_ieeexplore(self, url):
         driver = webdriver.Chrome()
         url = self.update_url(url)
@@ -124,6 +111,19 @@ class AbstractSP(BasePaperAbstract):
         
         driver.close()
         return text
+    
+    def get_abstract_from_publisher(self, url, _):
+        # TODO: this is super slow. Maybe not Selenium?
+        parsed_url = urlparse(url)
+        ieee_netloc = 'doi.ieeecomputersociety.org'
+        doi_netlog = 'doi.org'
+        if parsed_url.netloc == ieee_netloc:  
+            return self._get_abstract_from_computerorg(url)
+        elif parsed_url.netloc == doi_netlog:
+            return self._get_abstract_from_ieeexplore(url)
+        else:
+            raise NotImplementedError
+
 
 class AbstractUSENIX(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
@@ -136,8 +136,10 @@ class AbstractUSENIX(BasePaperAbstract):
         abstract_paragraphs = html.find(string=re.compile("Abstract:")).find_next(recursive=False)
         return abstract_paragraphs.get_text(separator='\n')
 
+
 class AbstractCCS(BasePaperAbstract):
     def get_abstract_from_publisher(self, url, authors):
+        # TODO: ACM library doesn't like me to crawl and will ban me when upset.
         logger.debug(f'URL: {url}')
         r = requests.get(url)
         assert r.status_code == 200
