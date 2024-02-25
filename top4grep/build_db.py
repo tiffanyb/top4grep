@@ -10,8 +10,8 @@ from .db import Base, Paper
 from .abstract import Abstracts
 
 logger = new_logger("DB")
+logger.setLevel('WARNING')
 
-KEYWORD = "kernel"
 CONFERENCES = ["NDSS", "IEEE S&P", "USENIX", "CCS"]
 NAME_MAP = {
         "NDSS": "ndss",
@@ -25,6 +25,7 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 def save_paper(conf, year, title, authors, abstract):
+    logger.debug(f'Adding paper {title} with abstract {abstract[:20]}...')
     session = Session()
     paper = Paper(conference=conf, year=year, title=title, authors=", ".join(authors), abstract=abstract)
     session.add(paper)
@@ -33,7 +34,7 @@ def save_paper(conf, year, title, authors, abstract):
 
 def paper_exist(conf, year, title, authors, abstract):
     session = Session()
-    paper = session.query(Paper).filter(Paper.conference==conf, Paper.year==year, Paper.title==title).first()
+    paper = session.query(Paper).filter(Paper.conference==conf, Paper.year==year, Paper.title==title, Paper.abstract==abstract).first()
     session.close()
     return paper is not None
 
@@ -41,8 +42,8 @@ def get_papers(name, year, build_abstract):
     cnt = 0
     conf = NAME_MAP[name]
 
-    if build_abstract and name == "NDSS" and year == 2018:
-        logger.warning(f"Skipping the abstract for NDSS 2018 becuase the website does not contain abstracts.")
+    if build_abstract and name == "NDSS" and (year == 2018 or year == 2016):
+        logger.warning(f"Skipping the abstract for NDSS {year} becuase the website does not contain abstracts.")
         extract_abstract = False
     else:
         extract_abstract = build_abstract
@@ -71,5 +72,5 @@ def get_papers(name, year, build_abstract):
 
 def build_db(build_abstract):
     for conf in CONFERENCES:
-        for year in range(2015, datetime.now().year+1):
+        for year in range(2000, datetime.now().year+1):
             get_papers(conf, year, build_abstract)

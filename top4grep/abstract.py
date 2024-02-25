@@ -15,7 +15,7 @@ from urllib.parse import urlparse, urlunparse
 from .utils import new_logger
 
 logger = new_logger('PaperAbstract')
-logger.setLevel('INFO')
+logger.setLevel('WARNING')
 
 class BasePaperAbstract(ABC):
     def get_abstract(self, paper_html, title, authors):
@@ -24,12 +24,13 @@ class BasePaperAbstract(ABC):
         try:
             publisher_url = self.get_publisher_url(paper_html)
         except Exception as e:
-            logger.warning(f"Failed to obtain publisher URL. Paper: {title}")
+            logger.debug(f"Failed to obtain publisher URL. Paper: {title}")
+            return ""
         else:
             try:
                 return self.get_abstract_from_publisher(publisher_url, authors)
             except Exception as e:
-                logger.warning(f"Failed to extract abstract from publisher URL {publisher_url}.")
+                logger.debug(f"Failed to extract abstract from publisher URL {publisher_url}.")
                 return ""
 
     def get_publisher_url(self, paper_html):

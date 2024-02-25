@@ -22,9 +22,6 @@ stemmer = PorterStemmer()
 
 CONFERENCES = ["NDSS", "IEEE S&P", "USENIX", "CCS"]
 
-
-
-
 # Function to check and download 'punkt' if not already available
 def check_and_download_punkt():
     try:
@@ -41,10 +38,12 @@ def fuzzy_match(title):
     tokens = word_tokenize(title)
     return [stemmer.stem(token) for token in tokens]
 
-def grep(keywords):
-    # TODO: currently we only grep from title, also grep from other fields in the future maybe?
-    # TODO: add grep from abstract
-    constraints = [Paper.title.contains(x) for x in keywords]
+def grep(keywords, abstract):
+    # TODO: currently we only grep either from title or from abstract, also grep from other fields in the future maybe?
+    if abstract:
+        constraints = [Paper.abstract.contains(x) for x in keywords]
+    else:
+        constraints = [Paper.title.contains(x) for x in keywords]
     with Session() as session:
         papers = session.query(Paper).filter(*constraints).all()
     #check whether whether nltk tokenizer data is downloaded
@@ -70,7 +69,7 @@ def main():
                                      usage="%(prog)s [options] -k <keywords>")
     parser.add_argument('-k', type=str, help="keywords to grep, separated by ','. For example, 'linux,kernel,exploit'", default='')
     parser.add_argument('--build-db', action="store_true", help="Builds the database of conference papers")
-    parser.add_argument('--abstract', action="store_true", help="Involve abstract into the database's building or query (Need Chrome Browser)")
+    parser.add_argument('--abstract', action="store_true", help="Involve abstract into the database's building or query (Need Chrome for building)")
     args = parser.parse_args()
 
     if args.k:
@@ -83,7 +82,7 @@ def main():
         else:
             logger.warning("No keyword is provided. Return all the papers.")
 
-        papers = grep(keywords)
+        papers = grep(keywords, args.abstract)
         logger.debug(f"Found {len(papers)} papers")
 
         show_papers(papers)
